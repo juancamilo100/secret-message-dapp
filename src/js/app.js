@@ -3,9 +3,9 @@ App = {
     contracts: {},
   
     init: async function() {
-    console.log("Initializing app....");
-  
-      return await App.initWeb3();
+        console.log("Initializing app....");
+    
+        return await App.initWeb3();
     },
   
     initWeb3: async function() {
@@ -34,20 +34,16 @@ App = {
     },
   
     initContract: function() {
-      $.getJSON('build/contracts/Message.json', function(data) {
-          console.log("Getting contract!");
-          console.log(data);
+      $.getJSON('Message.json', function(data) {
           // Get the necessary contract artifact file and instantiate it with @truffle/contract
           var MessageArtifact = data;
           App.contracts.Message = TruffleContract(MessageArtifact);
-          console.log("here it is!");
-          console.log(App.contracts.Message);
         
           // Set the provider for our contract
           App.contracts.Message.setProvider(App.web3Provider);
         
           // Use our contract to retrieve and mark the adopted pets
-          return 1;
+          return;
       });
   
       return App.bindEvents();
@@ -55,45 +51,40 @@ App = {
   
     bindEvents: function() {
       $(document).on('click', '.btn-sendMessage', App.sendMessage);
+      $(document).on('click', '.btn-getMessage', App.getMessage);
+    },
+
+    getMessage: async function(event) {
+        event.preventDefault();
+
+        const instance = await App.contracts.Message.deployed();
+
+        const currentMessage = await instance.getMessage();
+        console.log("The current secret message is:");
+        console.log(currentMessage);
     },
   
-    sendMessage: function(event) {
-        console.log("Sending message!");
-      event.preventDefault();
+    sendMessage: async function(event) {
+        event.preventDefault();
+    
+        const secretMessage = $("#userInput").val();
   
-    //   var message = parseInt($(event.target).data('message'));
-      var secretMessage = $("#userInput").val();
-  
-      var messageInstance;
-  
-      web3.eth.getAccounts(function(error, accounts) {
-        if (error) {
-          console.log(error);
-        }
-      
-        var account = accounts[0];
-      
-        App.contracts.Message.deployed().then(async (instance) => {
-          messageInstance = instance;
-            
-          const currentMessage = await messageInstance.getMessage();
-          console.log('currentMessage');
-          console.log(currentMessage);
-          console.log('Setting message...');
-          // Execute adopt as a transaction by sending account
-          return messageInstance.setMessage(secretMessage, {from: account});
-        }).then(async (result) => {
-            const currentMessage = await messageInstance.getMessage();
-            console.log("Updated message:");
-            console.log(currentMessage);
-            console.log('Message set successfully');
-          return secretMessage;
-        }).catch(function(err) {
-          console.log(err.message);
-        });
-      });    
+        web3.eth.getAccounts(async function(error, accounts) {
+            if (error) {
+            console.log(error);
+            }
+        
+            var account = accounts[0];
+        
+            try {
+                const instance = await App.contracts.Message.deployed()
+                // Execute adopt as a transaction by sending account
+                await instance.setMessage(secretMessage, {from: account});
+            } catch (err) {
+                console.log(err.message);
+            }
+        });    
     }
-  
   };
   
   $(function() {
